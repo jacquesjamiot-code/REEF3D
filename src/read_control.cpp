@@ -281,6 +281,34 @@ void control::read_control(lexer* p)
                 case 374: control>>A374;
                          clear(c,numint);
                          break;
+                case 380:
+                    control >> A380;
+                    clear(c, numint);
+                    break;
+                case 381:
+                    control >> A381;
+                    clear(c, numint);
+                    break;
+                case 382:
+                    control >> A382;
+                    clear(c, numint);
+                    break;
+                case 383:
+                    control >> A383;
+                    clear(c, numint);
+                    break;
+                case 384:
+                    control >> A384;
+                    clear(c, numint);
+                    break;
+                case 385:
+                    control >> A385_nmin >> A385_nmax;
+                    clear(c, numint);
+                    break;
+                case 386:
+                    control >> A386_xs >> A386_xe >> A386_ys >> A386_ye;
+                    clear(c, numint);
+                    break;
 
                 case 410: control>>A410;
                          clear(c,numint);
@@ -756,6 +784,10 @@ void control::read_control(lexer* p)
                case 139: control>>B139;
                          clear(c,numint);
                          break;
+               case 140:
+                   control >> B140;
+                   clear(c, numint);
+                   break;
                case 160: control>>B160;
                          clear(c,numint);
                          break;
@@ -1909,6 +1941,14 @@ void control::read_control(lexer* p)
                 case 312: control>>P312;
                          clear(c,numint);
                          break;
+                case 313:
+                    control >> P313;
+                    clear(c, numint);
+                    break;
+                case 314:
+                    control >> P314;
+                    clear(c, numint);
+                    break;
                 case 351: ++P351;
                          clear(c,numint);
                          break;

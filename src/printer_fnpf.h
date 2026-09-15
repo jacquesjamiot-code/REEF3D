@@ -45,6 +45,7 @@ class fnpf_vel_probe;
 class fnpf_vel_probe_theory;
 class fnpf_runup;
 class fnpf_print_kinematics;
+class fnpf_print_breaking_gauge;
 
 using namespace std;
 
@@ -89,6 +90,7 @@ private:
     fnpf_vel_probe *pvel;
     fnpf_vel_probe_theory *pveltheo;
     fnpf_print_kinematics **pkin;
+    fnpf_print_breaking_gauge *pbreakgauge;
 };
 
 #endif

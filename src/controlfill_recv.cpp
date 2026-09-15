@@ -186,6 +186,28 @@ void control::ctrlrecv()
     ii++;
     A374 = ictrl[ii];
     ii++;
+    A380 = ictrl[ii];
+    ii++;
+    A381 = dctrl[dd];
+    dd++;
+    A382 = dctrl[dd];
+    dd++;
+    A383 = dctrl[dd];
+    dd++;
+    A384 = ictrl[ii];
+    ii++;
+    A385_nmin = ictrl[ii];
+    ii++;
+    A385_nmax = ictrl[ii];
+    ii++;
+    A386_xs = dctrl[dd];
+    dd++;
+    A386_xe = dctrl[dd];
+    dd++;
+    A386_ys = dctrl[dd];
+    dd++;
+    A386_ye = dctrl[dd];
+    dd++;
 
     A410 = ictrl[ii];
     ii++;
@@ -528,6 +550,8 @@ void control::ctrlrecv()
     B134 = dctrl[dd];
     dd++;
     B135 = dctrl[dd];
+    dd++;
+    B140 = dctrl[dd];
     dd++;
     B136 = ictrl[ii];
     ii++;
@@ -1439,6 +1463,10 @@ void control::ctrlrecv()
     P311 = ictrl[ii];
     ii++;
     P312 = ictrl[ii];
+    ii++;
+    P313 = ictrl[ii];
+    ii++;
+    P314 = ictrl[ii];
     ii++;
     P351 = ictrl[ii];
     ii++;

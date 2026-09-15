@@ -190,6 +190,28 @@ void control::ctrlsend()
     ii++;
     ictrl[ii] = A374;
     ii++;
+    ictrl[ii] = A380;
+    ii++;
+    dctrl[dd] = A381;
+    dd++;
+    dctrl[dd] = A382;
+    dd++;
+    dctrl[dd] = A383;
+    dd++;
+    ictrl[ii] = A384;
+    ii++;
+    ictrl[ii] = A385_nmin;
+    ii++;
+    ictrl[ii] = A385_nmax;
+    ii++;
+    dctrl[dd] = A386_xs;
+    dd++;
+    dctrl[dd] = A386_xe;
+    dd++;
+    dctrl[dd] = A386_ys;
+    dd++;
+    dctrl[dd] = A386_ye;
+    dd++;
 
     ictrl[ii] = A410;
     ii++;
@@ -532,6 +554,8 @@ void control::ctrlsend()
     dctrl[dd] = B134;
     dd++;
     dctrl[dd] = B135;
+    dd++;
+    dctrl[dd] = B140;
     dd++;
     ictrl[ii] = B136;
     ii++;
@@ -1446,6 +1470,10 @@ void control::ctrlsend()
     ictrl[ii] = P311;
     ii++;
     ictrl[ii] = P312;
+    ii++;
+    ictrl[ii] = P313;
+    ii++;
+    ictrl[ii] = P314;
     ii++;
     ictrl[ii] = P351;
     ii++;

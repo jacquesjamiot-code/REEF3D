@@ -21,6 +21,8 @@ Author: Hans Bihs
 --------------------------------------------------------------------*/
 
 #include"fnpf_breaking.h"
+#include"fnpf_breaking_barthelemy.h"
+#include"fnpf_breaking_wang.h"
 #include"lexer.h"
 #include"fdm_fnpf.h"
 #include"ghostcell.h"
@@ -70,6 +72,7 @@ fnpf_breaking::fnpf_breaking(lexer *p, fdm_fnpf *c, ghostcell *pgc) : bx(p), by(
 
 
     ini_done = 0;
+    count_n = 0;
     
     
     
@@ -83,10 +86,23 @@ fnpf_breaking::fnpf_breaking(lexer *p, fdm_fnpf *c, ghostcell *pgc) : bx(p), by(
     
     if(p->A342>0.0)
     dist3=p->A342;
+
+    bart_check_parameters(p, pgc);
+
+    pbart = NULL;
+    pwang = NULL;
+
+    if(p->A350 == 4)
+    {
+        pbart = new fnpf_breaking_barthelemy(p, c, pgc);
+        pwang = new fnpf_breaking_wang(p, c, pgc);
+    }
 }
 
 fnpf_breaking::~fnpf_breaking()
 {
+    delete pbart;
+    delete pwang;
 }
 
 void fnpf_breaking::breaking(lexer *p, fdm_fnpf *c, ghostcell *pgc, slice &eta, slice &eta_n, slice &Fifsf, double alpha)
@@ -102,5 +118,8 @@ void fnpf_breaking::breaking(lexer *p, fdm_fnpf *c, ghostcell *pgc, slice &eta, 
     
     if(p->A350==3)
     breaking_romero(p, c, pgc, eta, eta_n, Fifsf, alpha);
+
+    if(p->A350 == 4)
+        breaking_barthelemy(p, c, pgc, eta, eta_n, Fifsf, alpha);
 }
 

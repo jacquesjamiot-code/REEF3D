@@ -30,6 +30,12 @@ double ghostcell::globalsum(double sendsum)
     return recvsum;
 }
 
+// collective MPI communication: element-wise sum over the ranks, in place
+void ghostcell::globalsumV(double *buf, int n)
+{
+    MPI_Allreduce(MPI_IN_PLACE, buf, n, MPI_DOUBLE, MPI_SUM, mpi_comm);
+}
+
 int ghostcell::globalisum(int sendisum)
 {
     MPI_Allreduce(&sendisum,&recvisum,1,MPI_INT,MPI_SUM,mpi_comm);

@@ -45,6 +45,27 @@ void fnpf_vtp_fsf::pvtp(lexer *p, int num)
         result<<"<PDataArray type=\"Float32\" Name=\"test\"/>\n";
     if(p->P110==1)
         result<<"<PDataArray type=\"Float32\" Name=\"Hs\"/>\n";
+
+    // riesz pyramid levels
+    if(p->P313 > 0)
+    {
+        const int pyr_num = p->A385_nmax - p->A385_nmin + 2;
+        const char *pyr_name[7] = {"A_pyramid", "phase_pyramid", "k_pyramid", "theta_pyramid",
+                                   "band_pyramid", "fo1_pyramid", "fo2_pyramid"};
+
+        for(int q = 0; q < 7; ++q)
+        {
+            result << "<PDataArray type=\"Float32\" Name=\"" << pyr_name[q] << "\" NumberOfComponents=\"" << pyr_num << "\"";
+            for(int m = 0; m < pyr_num; ++m)
+            {
+                if(m < pyr_num - 1)
+                    result << " ComponentName" << m << "=\"level" << p->A385_nmin + m << "\"";
+                else
+                    result << " ComponentName" << m << "=\"residual\"";
+            }
+            result << "/>\n";
+        }
+    }
     result<<"</PPointData>\n";
 
     char pname[200];

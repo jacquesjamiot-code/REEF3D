@@ -46,6 +46,10 @@ fdm_fnpf::fdm_fnpf(lexer *p) : test(p),Fifsf(p),
     p->Darray(W,p->imax*p->jmax*(p->kmax+2));
     p->Darray(Fi,p->imax*p->jmax*(p->kmax+2));
     p->Darray(Uin,p->imax*p->jmax*(p->kmax+2));
+
+    brk_B = brk_k = brk_c = brk_omega = NULL;
+    brk_pyr_num = brk_pyr_first = 0;
+    brk_pyr_A = brk_pyr_phase = brk_pyr_k = brk_pyr_theta = brk_pyr_band = brk_pyr_fo1 = brk_pyr_fo2 = NULL;
 }
 
 

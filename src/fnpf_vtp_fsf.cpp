@@ -71,6 +71,18 @@ void fnpf_vtp_fsf::print2D(lexer *p, fdm_fnpf *c, ghostcell* pgc)
 
     pgc->gcsl_start4(p,c->breaking_print,50);
 
+    // riesz pyramid levels, P313: one component per active level and the residual
+    const int pyr_num = p->A385_nmax - p->A385_nmin + 2;
+    slice4 **pyr_arrays[7] = {c->brk_pyr_A, c->brk_pyr_phase, c->brk_pyr_k, c->brk_pyr_theta,
+                              c->brk_pyr_band, c->brk_pyr_fo1, c->brk_pyr_fo2};
+    const char *pyr_name[7] = {"A_pyramid", "phase_pyramid", "k_pyramid", "theta_pyramid",
+                               "band_pyramid", "fo1_pyramid", "fo2_pyramid"};
+
+    if(p->P313 > 0)
+        for(int q = 0; q < 7; ++q)
+            for(int m = 0; m < pyr_num; ++m)
+                pgc->gcsl_start4(p, *pyr_arrays[q][m], 1);
+
     int num=0;
     if(p->P15==1)
     num = printcount;
@@ -128,6 +140,14 @@ void fnpf_vtp_fsf::print2D(lexer *p, fdm_fnpf *c, ghostcell* pgc)
         ++n;
     }
 
+    // pyramid levels
+    if(p->P313 > 0)
+        for(int q = 0; q < 7; ++q)
+        {
+            offset[n] = offset[n - 1] + sizeof(float) * p->pointnum2D * pyr_num + sizeof(int);
+            ++n;
+        }
+
     // Cells
     offset[n]=offset[n-1] + sizeof(int)*p->polygon_sum*3+sizeof(int);
     ++n;
@@ -167,6 +187,20 @@ void fnpf_vtp_fsf::print2D(lexer *p, fdm_fnpf *c, ghostcell* pgc)
         result<<"<DataArray type=\"Float32\" Name=\"Hs\" format=\"appended\" offset=\""<<offset[n]<<"\"/>\n";
         ++n;
     }
+    if(p->P313 > 0)
+        for(int q = 0; q < 7; ++q)
+        {
+            result << "<DataArray type=\"Float32\" Name=\"" << pyr_name[q] << "\" NumberOfComponents=\"" << pyr_num << "\"";
+            for(int m = 0; m < pyr_num; ++m)
+            {
+                if(m < pyr_num - 1)
+                    result << " ComponentName" << m << "=\"level" << p->A385_nmin + m << "\"";
+                else
+                    result << " ComponentName" << m << "=\"residual\"";
+            }
+            result << " format=\"appended\" offset=\"" << offset[n] << "\"/>\n";
+            ++n;
+        }
     result<<"</PointData>\n";
 
     vtp3D::polys(result, offset, n);
@@ -283,6 +317,20 @@ void fnpf_vtp_fsf::print2D(lexer *p, fdm_fnpf *c, ghostcell* pgc)
             result.write((char*)&ffn, sizeof(float));
         }
     }
+
+    //  pyramid levels
+    if(p->P313 > 0)
+        for(int q = 0; q < 7; ++q)
+        {
+            iin = sizeof(float) * p->pointnum2D * pyr_num;
+            result.write((char *)&iin, sizeof(int));
+            TPSLICELOOP
+            for(int m = 0; m < pyr_num; ++m)
+            {
+                ffn = float(p->sl_ipol4(*pyr_arrays[q][m]));
+                result.write((char *)&ffn, sizeof(float));
+            }
+        }
 
     //  Connectivity
     iin=sizeof(int)*p->polygon_sum*3;

@@ -524,5 +524,49 @@ double wave_lib_spectrum::spreading_function(lexer* p, double beta, double w)
         D = G_0 * pow(cos((beta - p->B131) / 2.0), 2.0 * s_f);
     }
 
+    // bimodal crossing sea: two cos^2s lobes centred on B131 +- B140/2
+    if(p->B130 == 3)
+    {
+        s_f = p->B134;
+
+        G_0 = pow(2.0, 2.0 * s_f - 1) / PI * pow(tgamma(s_f + 1.0), 2.0) / tgamma(2.0 * s_f + 1.0);
+
+        double dth = 0.5 * p->B140 * PI / 180.0;
+        double c1 = cos((beta - p->B131 - dth) / 2.0);
+        double c2 = cos((beta - p->B131 + dth) / 2.0);
+        c1 = (c1 > 0.0) ? c1 : 0.0;
+        c2 = (c2 > 0.0) ? c2 : 0.0;
+
+        D = 0.5 * G_0 * (pow(c1, 2.0 * s_f) + pow(c2, 2.0 * s_f));
+    }
+
+    // wrapped normal spreading, McAllister et al. (Nature 633, 2024), B134 = sigma_theta [deg]
+    // B130 4: one lobe at B131, B130 5: two lobes at B131 +- B140/2
+    if(p->B130 == 4 || p->B130 == 5)
+    {
+        double sig = p->B134 * PI / 180.0;
+        sig = MAX(sig, 1.0e-4);
+        double norm = 1.0 / (sig * sqrt(2.0 * PI));
+        double twosig2 = 2.0 * sig * sig;
+
+        double dth = (p->B130 == 5) ? 0.5 * p->B140 * PI / 180.0 : 0.0;
+        double th0a = p->B131 + dth;
+        double th0b = p->B131 - dth;
+
+        D = 0.0;
+        for(int m = -4; m <= 4; ++m)
+        {
+            double da = beta - th0a + 2.0 * PI * double(m);
+            D += norm * exp(-da * da / twosig2);
+            if(p->B130 == 5)
+            {
+                double db = beta - th0b + 2.0 * PI * double(m);
+                D += norm * exp(-db * db / twosig2);
+            }
+        }
+        if(p->B130 == 5)
+            D *= 0.5;
+    }
+
     return D;
 }

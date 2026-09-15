@@ -40,6 +40,7 @@ Author: Hans Bihs
 #include"potentialfile_out.h"
 #include"fnpf_state.h"
 #include"fnpf_print_kinematics.h"
+#include"fnpf_print_breaking_gauge.h"
 #include<sys/stat.h>
 #include<sys/types.h>
 #include<sstream>
@@ -112,8 +113,11 @@ printer_fnpf::printer_fnpf(lexer* p, fdm_fnpf *c, ghostcell *pgc)
     if(p->P40>0)
         pstate=new fnpf_state(p,c,pgc);
 
-    if(p->P59==1)
+    if(p->P59 >= 1)
         pbreaklog=new fnpf_breaking_log(p,c,pgc);
+
+    if(p->P314 > 0)
+        pbreakgauge = new fnpf_print_breaking_gauge(p, c);
 
     if(p->P85>0)
     {
@@ -157,6 +161,9 @@ void printer_fnpf::start(lexer* p, fdm_fnpf* c,ghostcell* pgc, ioflow *pflow)
     // Gages
     if(p->P51>0)
     pwsf->height_gauge(p,c,pgc,c->eta);
+
+    if(p->P314 > 0)
+        pbreakgauge->start(p, c, pgc);
 
     if(p->P50>0)
     pwsf_theory->height_gauge(p,c,pgc,pflow);
@@ -253,7 +260,7 @@ void printer_fnpf::start(lexer* p, fdm_fnpf* c,ghostcell* pgc, ioflow *pflow)
     if((p->simtime>p->probeprinttime && p->P55>0.0)  || (p->count==0 &&  p->P55>0.0))
     p->probeprinttime+=p->P55;
 
-    if(p->P59==1)
+    if(p->P59 >= 1)
     pbreaklog->write(p,c,pgc);
 
     // ALE force

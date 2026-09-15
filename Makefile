@@ -12,6 +12,13 @@ EIGEN_DIR    := ThirdParty/eigen-5.0.0
 CXXFLAGS     := -std=c++20 -DVERSION=\"$(GIT_VERSION)\" -DBRANCH=\"$(GIT_BRANCH)\"
 LDFLAGS      := -L ${HYPRE_DIR}/lib/ -lHYPRE
 INCLUDE      := -I ${HYPRE_DIR}/include -I ${EIGEN_DIR} -DEIGEN_MPL2_ONLY 
+USE_FFTW     ?= 0
+
+# FFTW3: A380 1 and 2 of the FNPF breaking criterion
+ifeq ($(USE_FFTW),1)
+CXXFLAGS     += -DUSE_FFTW=$(USE_FFTW)
+LDFLAGS      += -lfftw3
+endif
 SRC          := $(wildcard src/*.cpp)
 OBJECTS      := $(SRC:%.cpp=$(OBJ_DIR)/%.o)
 DEPENDENCIES := $(OBJECTS:.o=.d)

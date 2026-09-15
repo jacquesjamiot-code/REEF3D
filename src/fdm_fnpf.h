@@ -68,6 +68,11 @@ public:
     
     sliceint5 nodeval2D;
     slice4 breaking_print;
+
+    // barthelemy breaking, A350 4: fields for P313 and P314, NULL otherwise
+    slice4 *brk_B, *brk_k, *brk_c, *brk_omega;
+    int brk_pyr_num, brk_pyr_first;
+    slice4 **brk_pyr_A, **brk_pyr_phase, **brk_pyr_k, **brk_pyr_theta, **brk_pyr_band, **brk_pyr_fo1, **brk_pyr_fo2;
 	
     vec rhsvec;
     vec2D xvec,rvec;

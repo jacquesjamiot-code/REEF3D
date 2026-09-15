@@ -1,5 +1,8 @@
 
 26.08
+x added Barthelemy breaking onset criterion with Wang & Ducrozet breaking zone and dissipation (FNPF)
+x added bimodal and wrapped normal directional spreading functions for crossing seas
+x FFTW3 is optional (USE_FFTW=1), needed by A380 1 and 2 of the FNPF breaking criterion
 x fixed various sediment transport bugs (e.g. bedslope, alluvial roughnes, etc.)
 x added simpler no-erosion relaxation functions (sediment)
 x upgraded to C++20

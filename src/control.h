@@ -59,6 +59,8 @@ public:
     int A350,A351,A352,A353,A357,A358,A361,A362,A363,A368;
     double A354,A355,A356,A365,A366;
     int A370,A372,A373,A374;
+    int A380, A384, A385_nmin, A385_nmax;
+    double A381, A382, A383, A386_xs, A386_xe, A386_ys, A386_ye;
     double A371_u,A371_dir;
     double A372_xs,A372_xe,A372_ys,A372_ye;
 
@@ -126,7 +128,7 @@ public:
     double B120,B122,B123,B125_y;
     int B130,B133;
     double B131,B132_s,B132_e;
-    double B134,B135;
+    double B134, B135, B140;
     int B160, B170;
     int B181,B182,B183;
     double B181_1,B181_2,B181_3,B182_1,B182_2,B182_3,B183_1,B183_2,B183_3;
@@ -370,7 +372,7 @@ public:
     int *P194_its,*P194_ite,*P194_dit;
     double *P195_ts,*P195_te,*P195_dt;
     int P230,P240,P250;
-    int P310,P311,P312,P351,P352;
+    int P310, P311, P312, P313, P314, P351, P352;
     double *P230_x,*P240_x;
     double *P351_x,*P351_y;
     double *P352_x,*P352_y;

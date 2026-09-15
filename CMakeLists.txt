@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # ── Dependency versions ───────────────────────────────────────────────────────
 set(REEF3D_HYPRE_VERSION  "3.2.0")
 set(REEF3D_EIGEN_VERSION  "5.0.0")
+set(REEF3D_FFTW_VERSION   "3.3.10")
 
 # Default build type mirrors Makefile's .DEFAULT_GOAL = release
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -106,6 +107,45 @@ endif()
 # Enforce MPL2-only regardless of how Eigen was found
 target_compile_definitions(Eigen3::Eigen INTERFACE EIGEN_MPL2_ONLY)
 
+# ── FFTW ──────────────────────────────────────────────────────────────────────
+# FFTW3 is only used by A380 1 and 2 of the FNPF breaking criterion (A350 4).
+
+option(USE_FFTW "Build with FFTW3 (A380 1 and 2 of the FNPF breaking criterion)" OFF)
+
+if(USE_FFTW)
+  find_path(_FFTW3_INCLUDE_DIR fftw3.h)
+  find_library(_FFTW3_LIB NAMES fftw3)
+  if(_FFTW3_INCLUDE_DIR AND _FFTW3_LIB)
+    message(STATUS "Found FFTW3: ${_FFTW3_LIB}")
+    add_library(FFTW3::fftw3 UNKNOWN IMPORTED)
+    set_target_properties(FFTW3::fftw3 PROPERTIES
+      IMPORTED_LOCATION             "${_FFTW3_LIB}"
+      INTERFACE_INCLUDE_DIRECTORIES "${_FFTW3_INCLUDE_DIR}")
+  else()
+    message(STATUS "FFTW3 not found — downloading ${REEF3D_FFTW_VERSION} via FetchContent")
+    include(FetchContent)
+    FetchContent_Declare(fftw3
+      URL      https://www.fftw.org/fftw-${REEF3D_FFTW_VERSION}.tar.gz
+      URL_HASH SHA256=56c932549852cddcfafdab3820b0200c7742675be92179e59e6215b340e26467)
+    set(BUILD_TESTS     OFF CACHE BOOL "" FORCE)
+    set(DISABLE_FORTRAN ON  CACHE BOOL "" FORCE)
+    # static fftw, without changing BUILD_SHARED_LIBS for the other dependencies;
+    # fftw requires CMake 3.0: option() must honor the normal variable (CMP0077), and CMake >= 4
+    # needs a policy minimum
+    set(_REEF3D_SHARED_LIBS ${BUILD_SHARED_LIBS})
+    set(BUILD_SHARED_LIBS OFF)
+    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+    set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+    FetchContent_MakeAvailable(fftw3)
+    unset(CMAKE_POLICY_VERSION_MINIMUM)
+    unset(CMAKE_POLICY_DEFAULT_CMP0077)
+    set(BUILD_SHARED_LIBS ${_REEF3D_SHARED_LIBS})
+    # fftw exports its headers only on install
+    target_include_directories(fftw3 INTERFACE "$<BUILD_INTERFACE:${fftw3_SOURCE_DIR}/api>")
+    add_library(FFTW3::fftw3 ALIAS fftw3)
+  endif()
+endif()
+
 # ── Executable ───────────────────────────────────────────────────────────────
 
 file(GLOB SOURCES CONFIGURE_DEPENDS src/*.cpp)
@@ -141,3 +181,8 @@ target_link_libraries(REEF3D PRIVATE
   MPI::MPI_CXX
   HYPRE::HYPRE
   Eigen3::Eigen)
+
+if(USE_FFTW)
+  target_compile_definitions(REEF3D PRIVATE USE_FFTW=1)
+  target_link_libraries(REEF3D PRIVATE FFTW3::fftw3)
+endif()

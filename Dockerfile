@@ -3,7 +3,7 @@ FROM ubuntu:latest
 
 # Install required dependencies
 RUN apt-get update && apt-get install -y \
-    git cmake build-essential gfortran wget \
+    git cmake build-essential gfortran wget libfftw3-dev \
     && rm -rf /var/lib/apt/lists/*  
     # Clean up to reduce image size
 
@@ -39,7 +39,7 @@ RUN git clone https://github.com/REEF3D/DIVEMesh.git && \
 # Clone and Build REEF3D
 WORKDIR /opt
 RUN git clone https://github.com/REEF3D/REEF3D.git && \
-    cd REEF3D && make -j $(nproc)
+    cd REEF3D && make -j $(nproc) USE_FFTW=1
 
 # Create simulations folder and copy binaries
 RUN echo "mkdir -p /simulations && cp /opt/DIVEMesh/bin/DiveMESH /simulations && cp /opt/REEF3D/bin/REEF3D /simulations" >> ~/.bashrc

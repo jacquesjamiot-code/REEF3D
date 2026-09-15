@@ -25,6 +25,7 @@ Author: Hans Bihs
 
 #include<mpi.h>
 #include"increment.h"
+#include<vector>
 
 class fdm;
 class fdm2D;
@@ -165,6 +166,7 @@ public:
     void bcast_int(int*, int);
     void bcast_double(double *, int, int=0);
     double globalsum(double);
+    void globalsumV(double *, int);
     int globalisum(int);
     double globalmax(double);
     double globalmin(double);
@@ -172,6 +174,8 @@ public:
     int globalimin(int);
     double timesync(double);
     void globalctrl(lexer*);
+    // records addressed by a convex quadrilateral in global cell indices, delivered to the other ranks whose subdomain meets it
+    void deliver_quads(lexer *, const std::vector<double> &, int, std::vector<double> &);
     //Utilities
     void walldistance(lexer*,fdm*,convection*,reini*,ioflow*,field&);
 
@@ -183,6 +187,7 @@ public:
 	void gcsl_start2(lexer*,slice&, int);
 	void gcsl_start4(lexer*,slice&, int);
 	void gcsl_start4a(lexer*,slice&, int);
+    void gcsl_thick_halo(lexer *, double *, int, int, int);
 
     void gcsl_start1int(lexer*,sliceint&, int);
     void gcsl_start2int(lexer*,sliceint&, int);
@@ -318,6 +323,7 @@ private:
     bool do_comms = true;
     
     int ndims;
+    std::vector<int> tiles;  // subdomain bounds of every rank: i_lo, i_hi, j_lo, j_hi
 
 	double *send1,*send2,*send3,*send4,*send5,*send6;
 	double *recv1,*recv2,*recv3,*recv4,*recv5,*recv6;

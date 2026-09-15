@@ -108,6 +108,15 @@ void control::ini_default()
     A372_xs=A372_xe=A372_ys=A372_ye=0.0; // double wind forcing area
     A373=1;      // int wind forcing region
 
+    A380 = 1;                                     // int barthelemy breaking transform: 1 Hilbert, 2 Riesz FFT, 3 Riesz pyramid
+    A381 = 0.855;                                 // double barthelemy breaking onset threshold B_on
+    A382 = 0.0;                                   // double breaking dissipation strength b, 0 = detection only
+    A383 = 1.0;                                   // double factor on breaking duration Tbr
+    A384 = 2;                                     // int breaking omega estimate: 1 dispersion relation, 2 Lagrange time derivative
+    A385_nmin = 0;                                // int first Riesz pyramid level
+    A385_nmax = 3;                                // int last Riesz pyramid level
+    A386_xs = A386_xe = A386_ys = A386_ye = 0.0;  // double breaking seeding margins at the domain edges
+
     
     // PTF
     A410=1;      // int scheme eta
@@ -274,6 +283,7 @@ void control::ini_default()
     B136=1;         // int double summation method frequency vector
     B138=0;         // int seed number multidir waves
     B139=0;         // int seed number wave spectrum
+    B140 = 0.0;     // double crossing angle of the bimodal spreading functions B130 3 and 5 [deg]
     B160=5;        // int number of vertical layers for 2D wave generation
     B170=1024;     // int number of Fourier modes for the generation of steady surface gravity waves
 	B180=0;           // int gravity waves
@@ -646,7 +656,7 @@ void control::ini_default()
 	P56=0;            // int print out wsfline in y-dir
     P57=0;            // int add aditional info to WSF gage in FNPF
     P58=0;            // int print wave time series
-    P59=0;              // int print breaking wave log FNPF
+    P59 = 0;          // int print breaking wave log FNPF: 1 positions, 2 positions and vb
     P61=0;              // int print point probes
     P62=0;              // int print line probes
     P63=0;              // int print depth averaged point probe
@@ -717,7 +727,9 @@ void control::ini_default()
     P250=0;             // int print CPM variables to vtu
     P310=0;             // int print breaking to fnpf vtu
     P311=0;             // int print breaking viscosity to fnpf vtu
-    P312=0;             // int 
+    P312 = 0;           // int print breaking onset log FNPF
+    P313 = 0;           // int print riesz pyramid levels to fnpf vtp
+    P314 = 0;           // int print breaking criterion at wsf gages FNPF
 	P351=0;             // int print out wsf lsm1
 	P352=0;             // int print out wsf lsm2
     

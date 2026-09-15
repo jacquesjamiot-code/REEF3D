@@ -34,6 +34,8 @@ class fnpf_ddx;
 class fnpf_etadisc;
 class fnpf_coastline;
 class solver2D;
+class fnpf_breaking_barthelemy;
+class fnpf_breaking_wang;
 
 using namespace std;
 
@@ -52,6 +54,9 @@ public:
     
     // romero
     void breaking_romero(lexer*,fdm_fnpf*,ghostcell*,slice&,slice&,slice&,double);
+
+    // barthelemy onset, wang & ducrozet zone and dissipation
+    void breaking_barthelemy(lexer *, fdm_fnpf *, ghostcell *, slice &, slice &, slice &, double);
 
     
     
@@ -112,6 +117,9 @@ private:
     
     int steep_method;     // steepness computation method
     int cspeed_method;    // phase speed computation method
+
+    fnpf_breaking_barthelemy *pbart;
+    fnpf_breaking_wang *pwang;
     
 };
 
