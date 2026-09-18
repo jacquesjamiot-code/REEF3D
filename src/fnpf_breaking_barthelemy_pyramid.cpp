@@ -109,8 +109,9 @@ void fnpf_breaking_barthelemy::riesz_pyramid(lexer *p, fdm_fnpf *c, ghostcell *p
 
     pyr_stage &S0 = pyr_stages[PYR_TILE][0];
 
+    // eta, zero on dry cells
     SLICELOOP4
-    S0.low(i, j) = c->eta(i, j);
+    S0.low(i, j) = bart_wet(p, c, i, j) ? c->eta(i, j) : 0.0;
 
     riesz_level(p, pgc, 0, PYR_TILE);
 

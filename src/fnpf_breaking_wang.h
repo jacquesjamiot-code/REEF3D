@@ -164,7 +164,7 @@ public:
     void freeze_eta_t(lexer *, slice &eta, slice &eta_n, double alpha, int theta_refresh);
 
     // collective MPI communication
-    void intensity(lexer *, ghostcell *, const bart_config &, slice &Fifsf, int theta_refresh,
+    void intensity(lexer *, fdm_fnpf *, ghostcell *, const bart_config &, slice &Fifsf, int theta_refresh,
                    wang_call &);
 
     // collective MPI communication

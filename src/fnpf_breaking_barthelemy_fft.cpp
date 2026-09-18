@@ -23,7 +23,7 @@ Author: Jacques Amiot
 // Spatial Hilbert (A380 1) or Riesz (A380 2) transform of eta by FFT on the global grid.
 //   Hilbert: Hx = -i*sign(kx)*eta_hat, Hy = -i*sign(ky)*eta_hat, Hxy = -sign(kx)*sign(ky)*eta_hat
 //   Riesz:   fo1 = -i*(kx/|k|)*eta_hat, fo2 = -i*(ky/|k|)*eta_hat
-// eta is tapered by a Jacobsen window near non-fluid cells before the transform.
+// eta is zero on dry cells and tapered by a Jacobsen window near non-fluid cells before the transform.
 // A380 1 and 2 need REEF3D built with USE_FFTW=1.
 
 #include "fdm_fnpf.h"
@@ -45,10 +45,10 @@ void fnpf_breaking_barthelemy::spatial_transforms(lexer *p, fdm_fnpf *c, ghostce
     const int Nyh = Ny / 2 + 1;
     const double inv_N = 1.0 / (double)N;
 
-    // global eta on every rank
+    // global eta on every rank, zero on dry cells
     double *global_eta = new double[N]();
     SLICELOOP4
-    global_eta[(i + p->origin_i) * Ny + (j + p->origin_j)] = c->eta(i, j);
+    global_eta[(i + p->origin_i) * Ny + (j + p->origin_j)] = bart_wet(p, c, i, j) ? c->eta(i, j) : 0.0;
 
     pgc->globalsumV(global_eta, N);
 

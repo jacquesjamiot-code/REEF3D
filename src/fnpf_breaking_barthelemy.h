@@ -23,14 +23,15 @@ Author: Jacques Amiot
 #ifndef FNPF_BREAKING_BARTHELEMY_H_
 #define FNPF_BREAKING_BARTHELEMY_H_
 
+#include "fdm_fnpf.h"
 #include "fnpf_breaking_barthelemy_pyramid_core.h"
 #include "increment.h"
 #include "lexer.h"
 #include "slice4.h"
+#include "sliceint4.h"
 #include <cmath>
 #include <vector>
 
-class fdm_fnpf;
 class ghostcell;
 
 using namespace std;
@@ -45,6 +46,7 @@ static const double BART_OMEGA_HI = 1.3;      // omega ceiling, fraction of the 
 static const double BART_DIR_FILTER = 0.2;    // weight of the filter on the phase increment
 static const int BART_LAG_EVAL = 3;           // Lagrange derivative taken at the newest node
 static const double BART_LAG_DTMIN = 1.0e-3;  // smallest admissible min/max ratio of the time intervals
+static const double BART_HMIN_WD = 1.5;       // minimum water depth of the model, in wetting criteria A344
 
 // centered derivatives on a non-uniform grid
 static inline double centered_dx(slice4 &f, int i, int j, lexer *p, int mg)
@@ -55,6 +57,13 @@ static inline double centered_dx(slice4 &f, int i, int j, lexer *p, int mg)
 static inline double centered_dy(slice4 &f, int i, int j, lexer *p, int mg)
 {
     return ((f(i, j + 1) - f(i, j)) / p->DYP[j + mg] + (f(i, j) - f(i, j - 1)) / p->DYP[j - 1 + mg]) * 0.5;
+}
+
+// cell seen by the breaking model: under wetting-drying, wet and deeper than BART_HMIN_WD times the
+// wetting criterion, which leaves out the film of A343 1; every cell without wetting-drying
+static inline bool bart_wet(lexer *p, fdm_fnpf *c, int i, int j)
+{
+    return p->A343 == 0 || (p->wet[IJ] == 1 && c->WL(i, j) > BART_HMIN_WD * c->wd_criterion);
 }
 
 // linear dispersion relation
@@ -95,6 +104,7 @@ struct bart_chain
     slice4 dphi_filt;      // filtered phase increment, its sign gives the direction
     slice4 d1, d2, d3;     // last three phase increments
     slice4 omega, c, B;
+    sliceint4 wet_old;     // bart_wet at the previous timestep
 };
 
 // one level of the Riesz pyramid, P313
@@ -137,11 +147,12 @@ private:
 
     void local_hilbert(lexer *, fdm_fnpf *, ghostcell *);
     void local_riesz(lexer *, fdm_fnpf *, ghostcell *, slice4 &fo1_src, slice4 &fo2_src);
+    void phase_increment(lexer *, fdm_fnpf *, int i, int j);
     void pyramid_level_theta(lexer *);
 
     void lag_advance(lexer *);
     void omega_celerity(lexer *, fdm_fnpf *, ghostcell *);
-    void update_phase_refs(lexer *);
+    void update_phase_refs(lexer *, fdm_fnpf *);
     void criterion(lexer *, fdm_fnpf *);
     void seeds(lexer *, fdm_fnpf *, const bart_config &, std::vector<bart_seed> &);
 

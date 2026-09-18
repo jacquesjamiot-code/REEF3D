@@ -38,7 +38,7 @@ void fnpf_breaking_wang::freeze_eta_t(lexer *p, slice &eta, slice &eta_n, double
 }
 
 // integral I and nu_eddy of every breaker, onset log
-void fnpf_breaking_wang::intensity(lexer *p, ghostcell *pgc, const bart_config &cfg, slice &Fifsf,
+void fnpf_breaking_wang::intensity(lexer *p, fdm_fnpf *c, ghostcell *pgc, const bart_config &cfg, slice &Fifsf,
                                    int theta_refresh, wang_call &wc)
 {
     if(wc.n_onset_glob <= 0)
@@ -49,9 +49,23 @@ void fnpf_breaking_wang::intensity(lexer *p, ghostcell *pgc, const bart_config &
         // integrand lap_h(phi_s)*d(eta)/dt on this subdomain
         SLICELOOP4
         {
-            // the laplacian inverted by fnpf_fsfbc::damping()
+            // nothing is dissipated on a dry cell
+            if(!bart_wet(p, c, i, j))
+            {
+                G_wang(i, j) = 0.0;
+                continue;
+            }
+
+            // the laplacian inverted by fnpf_fsfbc::damping(): a dry neighbour takes the value of
+            // the cell, no flux across the shoreline
+            const double f = Fifsf(i, j);
+            const double f_ip = bart_wet(p, c, i + 1, j) ? Fifsf(i + 1, j) : f;
+            const double f_im = bart_wet(p, c, i - 1, j) ? Fifsf(i - 1, j) : f;
+            const double f_jp = bart_wet(p, c, i, j + 1) ? Fifsf(i, j + 1) : f;
+            const double f_jm = bart_wet(p, c, i, j - 1) ? Fifsf(i, j - 1) : f;
+
             const double lap =
-                ((Fifsf(i + 1, j) - Fifsf(i, j)) / (p->DXP[IP] * p->DXN[IP]) + (Fifsf(i - 1, j) - Fifsf(i, j)) / (p->DXP[IM1] * p->DXN[IP])) * p->x_dir + ((Fifsf(i, j + 1) - Fifsf(i, j)) / (p->DYP[JP] * p->DYN[JP]) + (Fifsf(i, j - 1) - Fifsf(i, j)) / (p->DYP[JM1] * p->DYN[JP])) * p->y_dir;
+                ((f_ip - f) / (p->DXP[IP] * p->DXN[IP]) + (f_im - f) / (p->DXP[IM1] * p->DXN[IP])) * p->x_dir + ((f_jp - f) / (p->DYP[JP] * p->DYN[JP]) + (f_jm - f) / (p->DYP[JM1] * p->DYN[JP])) * p->y_dir;
 
             G_wang(i, j) = lap * eta_t_wang(i, j);
         }

@@ -106,23 +106,7 @@ void fnpf_breaking_barthelemy::local_hilbert(lexer *p, fdm_fnpf *c, ghostcell *p
                         ? atan(dphase12dy / dphase12dx)
                         : ((dphase12dy >= 0.0) ? 0.5 * PI : -0.5 * PI);
 
-        // phase increment, once per timestep
-        if(theta_refresh && theta_ini)
-        {
-            double dphi = ch.phase(i, j) - ch.phase_sig_old(i, j);
-            while(dphi > PI)
-                dphi -= 2.0 * PI;
-            while(dphi < -PI)
-                dphi += 2.0 * PI;
-            ch.dphi_filt(i, j) = (1.0 - BART_DIR_FILTER) * ch.dphi_filt(i, j) + BART_DIR_FILTER * dphi;
-
-            if(p->A384 == 2)
-            {
-                ch.d1(i, j) = ch.d2(i, j);
-                ch.d2(i, j) = ch.d3(i, j);
-                ch.d3(i, j) = dphi;
-            }
-        }
+        phase_increment(p, c, i, j);
 
         if(ch.dphi_filt(i, j) > 0.0)
             th = (th > 0.0) ? (th - PI) : (th + PI);
@@ -186,23 +170,7 @@ void fnpf_breaking_barthelemy::local_riesz(lexer *p, fdm_fnpf *c, ghostcell *pgc
         const double q = fo1IJ * cos(th) + fo2IJ * sin(th);
         (*ch.phase_sig)(i, j) = atan2(q, feIJ);
 
-        // phase increment, once per timestep
-        if(theta_refresh && theta_ini)
-        {
-            double dphi = (*ch.phase_sig)(i, j) - ch.phase_sig_old(i, j);
-            while(dphi > PI)
-                dphi -= 2.0 * PI;
-            while(dphi < -PI)
-                dphi += 2.0 * PI;
-            ch.dphi_filt(i, j) = (1.0 - BART_DIR_FILTER) * ch.dphi_filt(i, j) + BART_DIR_FILTER * dphi;
-
-            if(p->A384 == 2)
-            {
-                ch.d1(i, j) = ch.d2(i, j);
-                ch.d2(i, j) = ch.d3(i, j);
-                ch.d3(i, j) = dphi;
-            }
-        }
+        phase_increment(p, c, i, j);
 
         if(ch.dphi_filt(i, j) > 0.0)
             th = (th > 0.0) ? (th - PI) : (th + PI);
@@ -214,6 +182,45 @@ void fnpf_breaking_barthelemy::local_riesz(lexer *p, fdm_fnpf *c, ghostcell *pgc
     pgc->gcsl_start4(p, ch.phase, 1);
     pgc->gcsl_start4(p, ch.k, 1);
     pgc->gcsl_start4(p, ch.theta, 1);
+}
+
+// Increment of the signed phase since the previous timestep, once per timestep: filtered for the
+// direction, and the last three kept for the Lagrange derivative (A384 2).
+// Wetting-drying: no increment on a dry cell. A cell wetted again has no history: the filter
+// restarts from zero and the Lagrange history holds the increments of the dispersion relation.
+// Requires: phase_sig and k of the cell at this timestep.
+void fnpf_breaking_barthelemy::phase_increment(lexer *p, fdm_fnpf *c, int i, int j)
+{
+    if(!(theta_refresh && theta_ini) || !bart_wet(p, c, i, j))
+        return;
+
+    if(ch.wet_old(i, j) == 0)
+    {
+        ch.dphi_filt(i, j) = 0.0;
+
+        if(p->A384 == 2)
+        {
+            const double omega = omega_dispersion(ch.k(i, j), MAX(c->WL(i, j), 0.01));
+            ch.d1(i, j) = -omega * lag_dt1;
+            ch.d2(i, j) = -omega * lag_dt2;
+            ch.d3(i, j) = -omega * lag_dt3;
+        }
+        return;
+    }
+
+    double dphi = (*ch.phase_sig)(i, j) - ch.phase_sig_old(i, j);
+    while(dphi > PI)
+        dphi -= 2.0 * PI;
+    while(dphi < -PI)
+        dphi += 2.0 * PI;
+    ch.dphi_filt(i, j) = (1.0 - BART_DIR_FILTER) * ch.dphi_filt(i, j) + BART_DIR_FILTER * dphi;
+
+    if(p->A384 == 2)
+    {
+        ch.d1(i, j) = ch.d2(i, j);
+        ch.d2(i, j) = ch.d3(i, j);
+        ch.d3(i, j) = dphi;
+    }
 }
 
 // direction of every pyramid level, P313, same construction on the level's own fields

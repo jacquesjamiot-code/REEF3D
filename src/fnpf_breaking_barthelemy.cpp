@@ -64,9 +64,23 @@ void fnpf_breaking::breaking_barthelemy(lexer *p, fdm_fnpf *c, ghostcell *pgc, s
     // intensity before zone: overlapping zones keep the largest nu_eddy*R
     pwang->breakers(p, pgc, cfg, seeds, pbart->theta_refresh, wc);
     pwang->freeze_eta_t(p, eta, eta_n, alpha, pbart->theta_refresh);
-    pwang->intensity(p, pgc, cfg, Fifsf, pbart->theta_refresh, wc);
+    pwang->intensity(p, c, pgc, cfg, Fifsf, pbart->theta_refresh, wc);
     pwang->zone(p, c, pgc, cfg, wc);
     pwang->apply(p, c, pgc, cfg, wc);
+
+    // no breaking on dry cells; the event is kept and resumes if the cell is wetted again
+    if(p->A343 > 0)
+    {
+        SLICELOOP4
+        if(!bart_wet(p, c, i, j))
+        {
+            c->breaking(i, j) = 0;
+            c->vb(i, j) = 0.0;
+        }
+
+        pgc->gcsl_start4int(p, c->breaking, 50);
+        pgc->gcsl_start4(p, c->vb, 1);
+    }
 
     SLICELOOP4
     c->breaklog(i, j) = 0;
@@ -141,7 +155,7 @@ void bart_check_parameters(lexer *p, ghostcell *pgc)
 
 bart_chain::bart_chain(lexer *p) : A(p), phase(p), k(p), theta(p),
                                    phase_sig(&phase_sig_own), phase_sig_own(p), phase_sig_old(p), dphi_filt(p),
-                                   d1(p), d2(p), d3(p), omega(p), c(p), B(p)
+                                   d1(p), d2(p), d3(p), omega(p), c(p), B(p), wet_old(p)
 {
 }
 
@@ -182,6 +196,7 @@ fnpf_breaking_barthelemy::fnpf_breaking_barthelemy(lexer *p, fdm_fnpf *c, ghostc
         ch.omega(i, j) = 0.0;
         ch.c(i, j) = 0.0;
         ch.B(i, j) = 0.0;
+        ch.wet_old(i, j) = 1;
     }
 
     if(p->A380 == 1)
@@ -370,7 +385,7 @@ void fnpf_breaking_barthelemy::diagnostic(lexer *p, fdm_fnpf *c, ghostcell *pgc,
 
     // omega reads the previous phases, update_phase_refs overwrites them
     omega_celerity(p, c, pgc);
-    update_phase_refs(p);
+    update_phase_refs(p, c);
 
     criterion(p, c);
     seeds(p, c, cfg, sd);

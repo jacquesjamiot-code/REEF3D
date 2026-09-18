@@ -142,13 +142,16 @@ void fnpf_breaking_barthelemy::omega_celerity(lexer *p, fdm_fnpf *c, ghostcell *
     pgc->gcsl_start4(p, ch.omega, 1);
 }
 
-// phases of reference for the increment of the next timestep
-void fnpf_breaking_barthelemy::update_phase_refs(lexer *p)
+// phases of reference and wet state for the increment of the next timestep
+void fnpf_breaking_barthelemy::update_phase_refs(lexer *p, fdm_fnpf *c)
 {
     if(theta_refresh)
     {
         SLICELOOP4
-        ch.phase_sig_old(i, j) = (*ch.phase_sig)(i, j);
+        {
+            ch.phase_sig_old(i, j) = (*ch.phase_sig)(i, j);
+            ch.wet_old(i, j) = bart_wet(p, c, i, j) ? 1 : 0;
+        }
 
         if(pyr_num > 0)
             for(int l = pyr_lev_min; l <= pyr_lev_max + 1; ++l)
@@ -176,13 +179,22 @@ void fnpf_breaking_barthelemy::criterion(lexer *p, fdm_fnpf *c)
     }
 }
 
-// cells with B >= B_on, outside the seeding margins A386
+// cells with B >= B_on, outside the seeding margins A386; with wetting-drying the cell and its
+// neighbours are wet, the centered derivatives of the cell do not read a dry value
 void fnpf_breaking_barthelemy::seeds(lexer *p, fdm_fnpf *c, const bart_config &cfg,
                                      std::vector<bart_seed> &sd)
 {
     SLICELOOP4
     if(ch.B(i, j) >= cfg.B_on)
     {
+        if(p->A343 > 0)
+        {
+            if(!bart_wet(p, c, i, j) || !bart_wet(p, c, i - 1, j) || !bart_wet(p, c, i + 1, j))
+                continue;
+            if(p->j_dir == 1 && (!bart_wet(p, c, i, j - 1) || !bart_wet(p, c, i, j + 1)))
+                continue;
+        }
+
         const int gi = i + p->origin_i;
         const int gj = j + p->origin_j;
 
