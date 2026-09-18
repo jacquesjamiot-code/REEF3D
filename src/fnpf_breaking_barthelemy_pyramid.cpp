@@ -24,7 +24,7 @@ Author: Jacques Amiot
 //
 // One recursive stage per level l, on the tile of the rank (PYR_TILE) or on the grid gathered
 // on every rank (PYR_GLOBAL):
-//   analysis   low -> band H9*low and its Riesz pair (levels N_min..N_max, A385), low -> L9 decimated
+//   analysis   low -> band H9*low and its Riesz pair (levels N_min..N_max, from A385), low -> L9 decimated
 //   recursion  the coarser stage returns its rebuilt pair fo_{l+1}
 //   synthesis  fo_l = gain * L9(zero-upsampled fo_{l+1}) + H9(Riesz pair of the band)
 // The base case is the low-pass residual N_max+1, whose Riesz pair seeds the synthesis.

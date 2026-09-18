@@ -108,14 +108,15 @@ void control::ini_default()
     A372_xs=A372_xe=A372_ys=A372_ye=0.0; // double wind forcing area
     A373=1;      // int wind forcing region
 
-    A380 = 1;                                     // int barthelemy breaking transform: 1 Hilbert, 2 Riesz FFT, 3 Riesz pyramid
+    A380 = 3;                                     // int barthelemy breaking transform: 1 Hilbert, 2 Riesz FFT, 3 Riesz pyramid
     A381 = 0.855;                                 // double barthelemy breaking onset threshold B_on
-    A382 = 0.0;                                   // double breaking dissipation strength b, 0 = detection only
+    A382 = 0.05;                                  // double breaking dissipation strength b, 0 = detection only
     A383 = 1.0;                                   // double factor on breaking duration Tbr
     A384 = 2;                                     // int breaking omega estimate: 1 dispersion relation, 2 Lagrange time derivative
-    A385_nmin = 0;                                // int first Riesz pyramid level
-    A385_nmax = 3;                                // int last Riesz pyramid level
-    A386_xs = A386_xe = A386_ys = A386_ye = 0.0;  // double breaking seeding margins at the domain edges
+    A385_lmin = A385_lmax = -1.0;                 // double Riesz pyramid wavelengths, -1: from the input waves
+    A385_nmin = A385_nmax = 0;                    // int Riesz pyramid levels, computed from A385_lmin, A385_lmax
+    A386_xs = A386_xe = A386_ys = A386_ye = -1.0; // double breaking seeding margins at the domain edges, -1: relaxation zones
+    A387 = -1;                                    // int breaking seeding band along the wet edge in cells, -1: automatic, 0: off
 
     
     // PTF

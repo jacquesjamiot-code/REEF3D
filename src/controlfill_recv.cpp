@@ -200,6 +200,10 @@ void control::ctrlrecv()
     ii++;
     A385_nmax = ictrl[ii];
     ii++;
+    A385_lmin = dctrl[dd];
+    dd++;
+    A385_lmax = dctrl[dd];
+    dd++;
     A386_xs = dctrl[dd];
     dd++;
     A386_xe = dctrl[dd];
@@ -208,6 +212,8 @@ void control::ctrlrecv()
     dd++;
     A386_ye = dctrl[dd];
     dd++;
+    A387 = ictrl[ii];
+    ii++;
 
     A410 = ictrl[ii];
     ii++;

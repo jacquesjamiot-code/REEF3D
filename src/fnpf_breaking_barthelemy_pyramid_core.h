@@ -40,9 +40,6 @@ Author: Jacques Amiot
 #include <cstddef>
 #include <vector>
 
-// highest level index + 2: the band stops at RIESZ_PYR_MAX-2, the residual takes the next slot
-#define RIESZ_PYR_MAX 7
-
 // reach of the 9x9 kernels, width of the halo a level needs
 inline constexpr int PYR_HALO = 4;
 

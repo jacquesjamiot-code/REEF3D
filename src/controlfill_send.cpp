@@ -204,6 +204,10 @@ void control::ctrlsend()
     ii++;
     ictrl[ii] = A385_nmax;
     ii++;
+    dctrl[dd] = A385_lmin;
+    dd++;
+    dctrl[dd] = A385_lmax;
+    dd++;
     dctrl[dd] = A386_xs;
     dd++;
     dctrl[dd] = A386_xe;
@@ -212,6 +216,8 @@ void control::ctrlsend()
     dd++;
     dctrl[dd] = A386_ye;
     dd++;
+    ictrl[ii] = A387;
+    ii++;
 
     ictrl[ii] = A410;
     ii++;

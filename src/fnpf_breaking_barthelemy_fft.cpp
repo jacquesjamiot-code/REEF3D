@@ -209,14 +209,14 @@ void fnpf_breaking_barthelemy::spatial_transforms(lexer *p, fdm_fnpf *c, ghostce
 }
 #endif
 
-// Jacobsen relaxation profile over 15 cells from the nearest non-fluid cell, computed once
-// with a two-pass chamfer distance. p->wet is not valid at construction time.
-void fnpf_breaking_barthelemy::precompute_window(lexer *p, ghostcell *pgc)
+// Two-pass chamfer distance [cells] from every cell of the global grid to the nearest non-fluid
+// or dry cell, 1e9 if there is none. p->wet is not valid at construction time.
+std::vector<double> bart_dry_distance(lexer *p, ghostcell *pgc)
 {
+    int i, j;  // indices of SLICELOOP4
     const int Nx = p->gknox;
     const int Ny = p->gknoy;
     const int N = Nx * Ny;
-    const double L_relax = 15.0;
 
     // global fluid mask, 0 or 1: each cell is written by its owner only, so the sum is the mask
     double *mask = new double[N]();
@@ -261,6 +261,22 @@ void fnpf_breaking_barthelemy::precompute_window(lexer *p, ghostcell *pgc)
             dist[idx] = v;
         }
 
+    std::vector<double> out(dist, dist + N);
+
+    delete[] dist;
+    delete[] mask;
+
+    return out;
+}
+
+// Jacobsen relaxation profile over BART_WET_EDGE_FFT cells from the nearest non-fluid or dry cell,
+// computed once.
+void fnpf_breaking_barthelemy::precompute_window(lexer *p, ghostcell *pgc)
+{
+    const int N = p->gknox * p->gknoy;
+    const double L_relax = BART_WET_EDGE_FFT;
+    const std::vector<double> dist = bart_dry_distance(p, pgc);
+
     // w = 0 at the non-fluid cell, 1 beyond L_relax
     window = new double[N];
     for(int q = 0; q < N; ++q)
@@ -268,7 +284,4 @@ void fnpf_breaking_barthelemy::precompute_window(lexer *p, ghostcell *pgc)
         double xn = MAX(1.0 - dist[q] / L_relax, 0.0);
         window[q] = 1.0 - (exp(pow(xn, 3.5)) - 1.0) / (EE - 1.0);
     }
-
-    delete[] dist;
-    delete[] mask;
 }

@@ -302,11 +302,15 @@ void control::read_control(lexer* p)
                     clear(c, numint);
                     break;
                 case 385:
-                    control >> A385_nmin >> A385_nmax;
+                    control >> A385_lmin >> A385_lmax;
                     clear(c, numint);
                     break;
                 case 386:
                     control >> A386_xs >> A386_xe >> A386_ys >> A386_ye;
+                    clear(c, numint);
+                    break;
+                case 387:
+                    control >> A387;
                     clear(c, numint);
                     break;
 

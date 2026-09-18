@@ -47,6 +47,7 @@ static const double BART_DIR_FILTER = 0.2;    // weight of the filter on the pha
 static const int BART_LAG_EVAL = 3;           // Lagrange derivative taken at the newest node
 static const double BART_LAG_DTMIN = 1.0e-3;  // smallest admissible min/max ratio of the time intervals
 static const double BART_HMIN_WD = 1.5;       // minimum water depth of the model, in wetting criteria A344
+static const double BART_WET_EDGE_FFT = 15.0; // FFT window width, and its seeding band along the wet edge [cells]
 
 // centered derivatives on a non-uniform grid
 static inline double centered_dx(slice4 &f, int i, int j, lexer *p, int mg)
@@ -118,6 +119,9 @@ struct bart_pyr_level
 
 void bart_check_parameters(lexer *, ghostcell *);
 
+// collective MPI communication
+std::vector<double> bart_dry_distance(lexer *, ghostcell *);
+
 class fnpf_breaking_barthelemy : public increment
 {
 public:
@@ -140,6 +144,9 @@ private:
     // collective MPI communication
     void riesz_pyramid(lexer *, fdm_fnpf *, ghostcell *, const bart_config &);
     void pyr_setup(lexer *, const bart_config &);
+    void pyramid_levels(lexer *, ghostcell *);
+    // collective MPI communication
+    void wet_edge(lexer *, ghostcell *);
     // collective MPI communication
     void riesz_level(lexer *, ghostcell *, int l, int mode);
     // collective MPI communication
@@ -164,15 +171,19 @@ private:
     double *window;  // Jacobsen window on the global grid
     int window_ini;
 
-    int pyr_lev_min, pyr_lev_max;  // active pyramid levels, A385
+    int pyr_lev_min, pyr_lev_max;  // active pyramid levels, from the wavelengths A385
     int pyr_num;                   // exported components, active levels and residual
-    bart_pyr_level *pyr_level[RIESZ_PYR_MAX];
+    std::vector<bart_pyr_level *> pyr_level;  // exported levels, P313, indexed by level
     slice4 **exp_A, **exp_phase, **exp_k, **exp_theta, **exp_band, **exp_fo1, **exp_fo2;
 
-    pyr_stage pyr_stages[2][RIESZ_PYR_MAX];  // fields of every level, [PYR_TILE or PYR_GLOBAL][l]
+    std::vector<pyr_stage> pyr_stages[2];    // fields of every level, [PYR_TILE or PYR_GLOBAL][l]
     std::vector<double> pyr_gather_buf;      // flat gathered level, for the Allreduce
     int pyr_gather_level;                    // first gathered level, -1 if none
     int pyr_setup_done;                      // 0 until pyr_setup has run
+
+    slice4 wet_edge_dist;  // distance to the initial wet edge [cells]
+    double wet_edge_band;  // no onset closer than this to the wet edge [cells], A387
+    int wet_edge_ini;      // 0 until wet_edge has run
 
     // Lagrange time derivative, A384 2
     double lag_dt1, lag_dt2, lag_dt3;  // last three time intervals

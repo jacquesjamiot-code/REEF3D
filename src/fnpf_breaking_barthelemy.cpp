@@ -100,6 +100,21 @@ void fnpf_breaking::breaking_barthelemy(lexer *p, fdm_fnpf *c, ghostcell *pgc, s
         cout << "breaking: " << count << endl;
 }
 
+// wavelength of the angular frequency omega in the depth h, linear dispersion relation (Newton)
+static double bart_wavelength(double omega, double h)
+{
+    double k = omega * omega / 9.81;
+    for(int it = 0; it < 100; ++it)
+    {
+        const double th = tanh(k * h);
+        const double dk = (9.81 * k * th - omega * omega) / (9.81 * th + 9.81 * k * h * (1.0 - th * th));
+        k -= dk;
+        if(fabs(dk) < 1.0e-12 * k)
+            break;
+    }
+    return 2.0 * PI / k;
+}
+
 void bart_check_parameters(lexer *p, ghostcell *pgc)
 {
     const char *name = nullptr, *detail = nullptr;
@@ -125,10 +140,12 @@ void bart_check_parameters(lexer *p, ghostcell *pgc)
         check(p->A382 < 0.0, "A 382", "(dissipation strength) cannot be negative");
         check(p->A383 <= 0.0, "A 383", "(factor on breaking duration) must be positive");
         check(p->A384 < 1 || p->A384 > 2, "A 384", "(omega estimate) expected 1 or 2");
-        check(p->A385_nmin < 0 || p->A385_nmin > p->A385_nmax || p->A385_nmax > RIESZ_PYR_MAX - 2,
-              "A 385", "(pyramid levels) requires 0 <= N_min <= N_max <= 5");
-        check(p->A386_xs < 0.0 || p->A386_xe < 0.0 || p->A386_ys < 0.0 || p->A386_ye < 0.0,
-              "A 386", "(seeding margins) cannot be negative");
+        check((p->A385_lmin != -1.0 || p->A385_lmax != -1.0) && (p->A385_lmin <= 0.0 || p->A385_lmax < p->A385_lmin),
+              "A 385", "(pyramid wavelengths) requires 0 < L_min <= L_max");
+        auto bad_margin = [](double m) { return m < 0.0 && m != -1.0; };
+        check(bad_margin(p->A386_xs) || bad_margin(p->A386_xe) || bad_margin(p->A386_ys) || bad_margin(p->A386_ye),
+              "A 386", "(seeding margins) expected -1 (relaxation zones) or a margin >= 0");
+        check(p->A387 < -1, "A 387", "(wet-edge band) expected -1 (automatic), 0 (off) or a number of cells");
     }
 
     check(p->P312 < 0 || p->P312 > 1, "P 312", "expected 0 or 1");
@@ -164,7 +181,7 @@ bart_pyr_level::bart_pyr_level(lexer *p) : k(p), fo1(p), fo2(p), A(p), phase(p),
 {
 }
 
-fnpf_breaking_barthelemy::fnpf_breaking_barthelemy(lexer *p, fdm_fnpf *c, ghostcell *pgc) : ch(p)
+fnpf_breaking_barthelemy::fnpf_breaking_barthelemy(lexer *p, fdm_fnpf *c, ghostcell *pgc) : ch(p), wet_edge_dist(p)
 {
     Hx = Hy = Hxy = fo1 = fo2 = nullptr;
 
@@ -220,6 +237,11 @@ fnpf_breaking_barthelemy::fnpf_breaking_barthelemy(lexer *p, fdm_fnpf *c, ghostc
     window = nullptr;
     window_ini = 0;
 
+    SLICELOOP4
+    wet_edge_dist(i, j) = 1.0e9;
+    wet_edge_band = 0.0;
+    wet_edge_ini = 0;
+
     lag_dt1 = lag_dt2 = lag_dt3 = 0.0;
     lag_t_prev = 0.0;
     lag_hist_n = 0;
@@ -230,15 +252,18 @@ fnpf_breaking_barthelemy::fnpf_breaking_barthelemy(lexer *p, fdm_fnpf *c, ghostc
     theta_refresh = 0;
     theta_ini = 0;
 
-    // pyramid levels, and the levels exported to the vtp with P313
-    pyr_lev_min = p->A385_nmin;
-    pyr_lev_max = p->A385_nmax;
+    // pyramid levels from the wavelengths A385, and the levels exported to the vtp with P313
+    pyr_lev_min = pyr_lev_max = 0;
+    if(p->A380 == 3)
+        pyramid_levels(p, pgc);
     pyr_num = 0;
     pyr_gather_level = -1;
     pyr_setup_done = 0;
 
-    for(int l = 0; l < RIESZ_PYR_MAX; ++l)
-        pyr_level[l] = nullptr;
+    // bands 0..N_max and the residual
+    pyr_level.assign(pyr_lev_max + 2, nullptr);
+    pyr_stages[PYR_TILE].resize(pyr_lev_max + 2);
+    pyr_stages[PYR_GLOBAL].resize(pyr_lev_max + 2);
 
     exp_A = exp_phase = exp_k = exp_theta = exp_band = exp_fo1 = exp_fo2 = nullptr;
 
@@ -310,8 +335,8 @@ fnpf_breaking_barthelemy::~fnpf_breaking_barthelemy()
     delete fo2;
     delete[] window;
 
-    for(int l = 0; l < RIESZ_PYR_MAX; ++l)
-        delete pyr_level[l];
+    for(bart_pyr_level *LV : pyr_level)
+        delete LV;
 
     delete[] exp_A;
     delete[] exp_phase;
@@ -357,10 +382,11 @@ bart_config fnpf_breaking_barthelemy::config(lexer *p)
     cfg.Ny = p->gknoy;
     cfg.N = cfg.Nx * cfg.Ny;
 
-    cfg.m_xs = p->A386_xs;
-    cfg.m_xe = p->A386_xe;
-    cfg.m_ys = p->A386_ys;
-    cfg.m_ye = p->A386_ye;
+    // -1: the relaxation zones of the wave generation and the numerical beach
+    cfg.m_xs = (p->A386_xs < 0.0) ? p->B96_1 : p->A386_xs;
+    cfg.m_xe = (p->A386_xe < 0.0) ? p->B96_2 : p->A386_xe;
+    cfg.m_ys = (p->A386_ys < 0.0) ? 0.0 : p->A386_ys;
+    cfg.m_ye = (p->A386_ye < 0.0) ? 0.0 : p->A386_ye;
 
     return cfg;
 }
@@ -369,6 +395,13 @@ bart_config fnpf_breaking_barthelemy::config(lexer *p)
 void fnpf_breaking_barthelemy::diagnostic(lexer *p, fdm_fnpf *c, ghostcell *pgc, const bart_config &cfg,
                                           std::vector<bart_seed> &sd)
 {
+    // band along the wet edge, once
+    if(!wet_edge_ini)
+    {
+        wet_edge(p, pgc);
+        wet_edge_ini = 1;
+    }
+
     if(p->A380 == 1 || p->A380 == 2)
         spatial_transforms(p, c, pgc);
 
@@ -389,4 +422,81 @@ void fnpf_breaking_barthelemy::diagnostic(lexer *p, fdm_fnpf *c, ghostcell *pgc,
 
     criterion(p, c);
     seeds(p, c, cfg, sd);
+}
+
+// Levels of the Riesz pyramid from the wavelengths A385 [m], by default from the input waves:
+//   N_min = round(log2(L_min / (2 dx)))       level whose shortest resolved wavelength is L_min
+//   N_max = round(log2(L_max / (8 dx))) + 1   level whose longest resolved wavelength is L_max, plus one
+// Both within [0, log2(N/9)], N the number of cells of the global grid in x (2D), or the smaller of
+// x and y (3D): level l has N/2^l cells and must keep the 9-cell kernel. N_max >= N_min.
+// Written to A385_nmin, A385_nmax, read by the vtp printers.
+void fnpf_breaking_barthelemy::pyramid_levels(lexer *p, ghostcell *pgc)
+{
+    double L_min = p->A385_lmin, L_max = p->A385_lmax;
+
+    // from the input waves, in the depth of the wave generation
+    if(L_min < 0.0)
+    {
+        const double h = (p->B94 == 1) ? p->B94_wdt : p->phimean;
+
+        if(p->B92 < 30 || p->B92 == 70)
+            L_min = L_max = p->wL;
+        else if(p->B87 == 1)
+        {
+            L_min = bart_wavelength(p->B87_2, h);
+            L_max = bart_wavelength(p->B87_1, h);
+        }
+        else if(p->wTp > 0.0)
+            L_min = L_max = bart_wavelength(2.0 * PI / p->wTp, h);
+        else
+            L_min = L_max = 0.0;
+    }
+
+    if(!(L_min > 0.0))
+    {
+        if(p->mpirank == 0)
+            cout << "\n"
+                 << "!!! wrong input error for A 385 !!!\n\n"
+                 << "A 385 (pyramid wavelengths) required: no input waves to take them from\n\n"
+                 << "!!! please check the REEF3D User Guide !!!\n\n\n"
+                 << endl;
+
+        pgc->final(true);
+    }
+
+    const bart_config cfg = config(p);
+    const double dx = (p->j_dir == 1) ? MIN(cfg.dx0, cfg.dy0) : cfg.dx0;
+    const int N = (p->j_dir == 1) ? MIN(p->gknox, p->gknoy) : p->gknox;
+    const int n_grid = MAX((int)floor(log2(N / 9.0)), 0);
+
+    int n_min = (int)lround(log2(L_min / (2.0 * dx)));
+    int n_max = (int)lround(log2(L_max / (8.0 * dx))) + 1;
+    n_min = MAX(0, MIN(n_min, n_grid));
+    n_max = MAX(0, MIN(n_max, n_grid));
+    if(n_max < n_min)
+        n_max = n_min;
+
+    pyr_lev_min = p->A385_nmin = n_min;
+    pyr_lev_max = p->A385_nmax = n_max;
+
+    if(p->mpirank == 0)
+        cout << "breaking pyramid: L_min: " << L_min << " L_max: " << L_max << " N_min: " << n_min << " N_max: " << n_max << endl;
+}
+
+// Band along the initial wet edge (shoreline, dry and non-fluid cells, not the domain boundary)
+// where no onset is seeded: A387 cells, by default the reach of the transform, 15 cells (FFT)
+// or 4*2^N_max cells (pyramid). Computed once: p->wet is not valid at construction time.
+void fnpf_breaking_barthelemy::wet_edge(lexer *p, ghostcell *pgc)
+{
+    if(p->A387 >= 0)
+        wet_edge_band = (double)p->A387;
+    else
+        wet_edge_band = (p->A380 == 3) ? (double)(PYR_HALO << pyr_lev_max) : BART_WET_EDGE_FFT;
+
+    if(wet_edge_band <= 0.0)
+        return;
+
+    const std::vector<double> dist = bart_dry_distance(p, pgc);
+    SLICELOOP4
+    wet_edge_dist(i, j) = dist[(size_t)(i + p->origin_i) * p->gknoy + (j + p->origin_j)];
 }

@@ -59,8 +59,8 @@ public:
     int A350,A351,A352,A353,A357,A358,A361,A362,A363,A368;
     double A354,A355,A356,A365,A366;
     int A370,A372,A373,A374;
-    int A380, A384, A385_nmin, A385_nmax;
-    double A381, A382, A383, A386_xs, A386_xe, A386_ys, A386_ye;
+    int A380, A384, A385_nmin, A385_nmax, A387;
+    double A381, A382, A383, A385_lmin, A385_lmax, A386_xs, A386_xe, A386_ys, A386_ye;
     double A371_u,A371_dir;
     double A372_xs,A372_xe,A372_ys,A372_ye;
 

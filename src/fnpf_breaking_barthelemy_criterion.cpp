@@ -179,8 +179,9 @@ void fnpf_breaking_barthelemy::criterion(lexer *p, fdm_fnpf *c)
     }
 }
 
-// cells with B >= B_on, outside the seeding margins A386; with wetting-drying the cell and its
-// neighbours are wet, the centered derivatives of the cell do not read a dry value
+// cells with B >= B_on, outside the seeding margins A386 and the wet-edge band A387; with
+// wetting-drying the cell and its neighbours are wet, the centered derivatives of the cell do
+// not read a dry value
 void fnpf_breaking_barthelemy::seeds(lexer *p, fdm_fnpf *c, const bart_config &cfg,
                                      std::vector<bart_seed> &sd)
 {
@@ -194,6 +195,10 @@ void fnpf_breaking_barthelemy::seeds(lexer *p, fdm_fnpf *c, const bart_config &c
             if(p->j_dir == 1 && (!bart_wet(p, c, i, j - 1) || !bart_wet(p, c, i, j + 1)))
                 continue;
         }
+
+        // band along the wet edge, A387
+        if(wet_edge_dist(i, j) < wet_edge_band)
+            continue;
 
         const int gi = i + p->origin_i;
         const int gj = j + p->origin_j;
