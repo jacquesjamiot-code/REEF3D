@@ -47,7 +47,7 @@ static const double BART_DIR_FILTER = 0.2;    // weight of the filter on the pha
 static const int BART_LAG_EVAL = 3;           // Lagrange derivative taken at the newest node
 static const double BART_LAG_DTMIN = 1.0e-3;  // smallest admissible min/max ratio of the time intervals
 static const double BART_HMIN_WD = 1.5;       // minimum water depth of the model, in wetting criteria A344
-static const double BART_WET_EDGE_FFT = 15.0; // FFT window width, and its seeding band along the wet edge [cells]
+static const double BART_WET_EDGE_FFT = 15.0;  // FFT window width, and its seeding band along the wet edge [cells]
 
 // centered derivatives on a non-uniform grid
 static inline double centered_dx(slice4 &f, int i, int j, lexer *p, int mg)
@@ -105,7 +105,7 @@ struct bart_chain
     slice4 dphi_filt;      // filtered phase increment, its sign gives the direction
     slice4 d1, d2, d3;     // last three phase increments
     slice4 omega, c, B;
-    sliceint4 wet_old;     // bart_wet at the previous timestep
+    sliceint4 wet_old;  // bart_wet at the previous timestep
 };
 
 // one level of the Riesz pyramid, P313

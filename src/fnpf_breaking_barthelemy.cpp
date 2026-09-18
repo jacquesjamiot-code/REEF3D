@@ -142,7 +142,8 @@ void bart_check_parameters(lexer *p, ghostcell *pgc)
         check(p->A384 < 1 || p->A384 > 2, "A 384", "(omega estimate) expected 1 or 2");
         check((p->A385_lmin != -1.0 || p->A385_lmax != -1.0) && (p->A385_lmin <= 0.0 || p->A385_lmax < p->A385_lmin),
               "A 385", "(pyramid wavelengths) requires 0 < L_min <= L_max");
-        auto bad_margin = [](double m) { return m < 0.0 && m != -1.0; };
+        auto bad_margin = [](double m)
+        { return m < 0.0 && m != -1.0; };
         check(bad_margin(p->A386_xs) || bad_margin(p->A386_xe) || bad_margin(p->A386_ys) || bad_margin(p->A386_ye),
               "A 386", "(seeding margins) expected -1 (relaxation zones) or a margin >= 0");
         check(p->A387 < -1, "A 387", "(wet-edge band) expected -1 (automatic), 0 (off) or a number of cells");

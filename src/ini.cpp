@@ -115,8 +115,8 @@ void control::ini_default()
     A384 = 2;                                     // int breaking omega estimate: 1 dispersion relation, 2 Lagrange time derivative
     A385_lmin = A385_lmax = -1.0;                 // double Riesz pyramid wavelengths, -1: from the input waves
     A385_nmin = A385_nmax = 0;                    // int Riesz pyramid levels, computed from A385_lmin, A385_lmax
-    A386_xs = A386_xe = A386_ys = A386_ye = -1.0; // double breaking seeding margins at the domain edges, -1: relaxation zones
-    A387 = -1;                                    // int breaking seeding band along the wet edge in cells, -1: automatic, 0: off
+    A386_xs = A386_xe = A386_ys = A386_ye = -1.0;  // double breaking seeding margins at the domain edges, -1: relaxation zones
+    A387 = -1;                                     // int breaking seeding band along the wet edge in cells, -1: automatic, 0: off
 
     
     // PTF
